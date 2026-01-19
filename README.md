@@ -13,7 +13,7 @@ This project provides an interactive visualization of AI usage statistics across
 
 ## 🚀 Live Demo
 
-**Production:** [View Live Dashboard](https://thinkingahead.com/data-statistics)
+**Production:** [View Live Dashboard](https://www.negreflorian.com/data-statistics)
 
 ## 📊 Data Source
 
@@ -200,9 +200,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 👤 Author
 
 **Florian Negre**
-- Website: [thinkingahead.com](https://thinkingahead.com)
+- Website: [negreflorian.com](https://www.negreflorian.com/)
 - LinkedIn: [Florian Negre](https://linkedin.com/in/florian-negre)
-- Project: Thinking Ahead Business Intelligence Suite
+- Project: Thinking Ahead > Data & Statistics
 
 ## 🙏 Acknowledgments
 
