@@ -1,0 +1,13 @@
+﻿# Override GitHub's language detection
+# Force JavaScript as primary language despite HTML file
+
+*.html linguist-language=JavaScript
+*.js linguist-detectable=true
+
+# Ensure proper language statistics
+*.css linguist-vendored=false
+*.html linguist-vendored=false
+*.html linguist-language=JavaScript
+*.js linguist-detectable=true
+*.css linguist-vendored=false
+*.html linguist-vendored=false
