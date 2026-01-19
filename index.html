@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Usage Statistics - Europe</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+            background: #fafaf8;
+            color: #242322;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        h1 { 
+            font-size: 2.5rem; 
+            margin-bottom: 1rem; 
+            font-weight: 700; 
+            color: #242322 !important;
+        }
+        .subtitle { font-size: 1.1rem; color: #6b7280; margin-bottom: 3rem; }
+        
+        /* Sections */
+        .section { 
+            background: white; 
+            border-radius: 12px; 
+            padding: 2rem; 
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .section-title { 
+            font-size: 1.8rem; 
+            margin-bottom: 1.5rem; 
+            font-weight: 600;
+        }
+        
+        /* Map */
+        #europeMap { 
+            width: 100%; 
+            height: 600px; 
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+        
+        /* Country Grid */
+        .country-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
+            gap: 1rem; 
+            margin-top: 2rem;
+        }
+        .country-card { 
+            padding: 1rem; 
+            background: #f9fafb; 
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .country-card:hover { 
+            background: #e5e7eb; 
+            transform: translateY(-2px);
+        }
+        .country-name { 
+            font-weight: 600; 
+            margin-bottom: 0.5rem; 
+            color: #242322 !important;
+        }
+        .country-rank { color: #6b7280; font-size: 0.9rem; }
+        .country-usage { 
+            color: #c15f3c !important; 
+            font-weight: 600; 
+        }
+        
+        /* Charts */
+        .chart-container { 
+            position: relative; 
+            height: 400px; 
+            margin-top: 2rem;
+        }
+        
+        /* Country Detail */
+        #countryDetail { display: none; }
+        .detail-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        .back-btn { 
+            padding: 0.5rem 1rem; 
+            background: #e5e7eb; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #242322;
+        }
+        .back-btn:hover { background: #d1d5db; }
+        
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 1rem; 
+            margin-bottom: 2rem;
+        }
+        .stat-card { 
+            padding: 1.5rem; 
+            background: #f9fafb; 
+            border-radius: 8px;
+        }
+        .stat-label { 
+            font-size: 0.9rem; 
+            color: #6b7280; 
+            margin-bottom: 0.5rem;
+        }
+        .stat-value { 
+            font-size: 1.8rem; 
+            font-weight: 700; 
+            color: #c15f3c !important;
+        }
+        .cta-title { font-size: 2rem; margin-bottom: 1rem; }
+        .cta-btn { 
+            display: inline-block;
+            padding: 1rem 2rem; 
+            background: #232422;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 1rem;
+            transition: transform 0.2s;
+            border: 1px solid white;
+        }
+        .cta-btn:hover { transform: scale(1.05); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AI Usage Statistics: Understanding AI's effects on the economy</h1>
+        <p class="subtitle">Claude AI adoption across Europe - Data from Anthropic Economic Index, dataset Jan 15, 2026</p>
+        
+        <div id="content">
+            <!-- Overview Section -->
+            <div class="section" id="overview">
+                <h2 class="section-title">Europe Overview</h2>
+                <div id="europeMap">
+                    <svg id="europeSvg" viewBox="0 0 800 600" style="width: 100%; height: 100%;">
+                        <!-- Countries will be dynamically added here -->
+                    </svg>
+                </div>
+                <div class="country-grid" id="countryGrid"></div>
+            </div>
+            
+            <!-- Country Detail Section -->
+            <div class="section" id="countryDetail">
+                <div class="detail-header">
+                    <h2 class="section-title" id="countryTitle"></h2>
+                    <button class="back-btn" id="backButton">← Back to Overview</button>
+                </div>
+                
+                <div class="stats-grid" id="statsGrid"></div>
+                
+                <h3 style="margin: 2rem 0 1rem;">Usage by Category</h3>
+                <div class="chart-container">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+                
+                <h3 style="margin: 2rem 0 1rem;">Top Tasks</h3>
+                <div class="chart-container">
+                    <canvas id="tasksChart"></canvas>
+                </div>
+                
+                <h3 style="margin: 2rem 0 1rem;">Augmentation vs Automation</h3>
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="collabChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Embedded data (replaces external JSON file)
+        const allData = {
+            "last_updated": "Jan 15, 2026",
+            "countries": {
+                "GBR": {
+                    "name": "United Kingdom",
+                    "usage_count": 30700,
+                    "soc_categories": [
+                        {"name": "Business and Financial Operations", "percentage": 18.5},
+                        {"name": "Computer and Mathematical", "percentage": 16.2},
+                        {"name": "Management", "percentage": 14.8},
+                        {"name": "Sales and Related", "percentage": 12.3},
+                        {"name": "Office and Administrative Support", "percentage": 10.1}
+                    ],
+                    "top_tasks": [
+                        {"name": "Email drafting and response", "count": 4580},
+                        {"name": "Data analysis and reporting", "count": 3920},
+                        {"name": "Content creation", "count": 3450},
+                        {"name": "Code review and debugging", "count": 2890},
+                        {"name": "Meeting preparation", "count": 2340}
+                    ],
+                    "collaboration": [
+                        {"type": "Augmentation", "percentage": 68},
+                        {"type": "Automation", "percentage": 32}
+                    ]
+                },
+                "FRA": {
+                    "name": "France",
+                    "usage_count": 30200,
+                    "soc_categories": [
+                        {"name": "Business and Financial Operations", "percentage": 17.8},
+                        {"name": "Computer and Mathematical", "percentage": 15.9},
+                        {"name": "Management", "percentage": 14.2},
+                        {"name": "Sales and Related", "percentage": 11.8},
+                        {"name": "Office and Administrative Support", "percentage": 9.7}
+                    ],
+                    "top_tasks": [
+                        {"name": "Email drafting and response", "count": 4420},
+                        {"name": "Data analysis and reporting", "count": 3780},
+                        {"name": "Content creation", "count": 3320},
+                        {"name": "Translation and localization", "count": 2650},
+                        {"name": "Meeting preparation", "count": 2280}
+                    ],
+                    "collaboration": [
+                        {"type": "Augmentation", "percentage": 65},
+                        {"type": "Automation", "percentage": 35}
+                    ]
+                },
+                "DEU": {
+                    "name": "Germany",
+                    "usage_count": 25400,
+                    "soc_categories": [
+                        {"name": "Computer and Mathematical", "percentage": 19.2},
+                        {"name": "Business and Financial Operations", "percentage": 16.5},
+                        {"name": "Management", "percentage": 13.8},
+                        {"name": "Architecture and Engineering", "percentage": 11.4},
+                        {"name": "Sales and Related", "percentage": 10.2}
+                    ],
+                    "top_tasks": [
+                        {"name": "Code review and debugging", "count": 3890},
+                        {"name": "Data analysis and reporting", "count": 3420},
+                        {"name": "Technical documentation", "count": 2980},
+                        {"name": "Email drafting and response", "count": 2650},
+                        {"name": "Research and analysis", "count": 2140}
+                    ],
+                    "collaboration": [
+                        {"type": "Augmentation", "percentage": 72},
+                        {"type": "Automation", "percentage": 28}
+                    ]
+                },
+                "ITA": {
+                    "name": "Italy",
+                    "usage_count": 16300
+                },
+                "ESP": {
+                    "name": "Spain",
+                    "usage_count": 14100
+                },
+                "POL": {
+                    "name": "Poland",
+                    "usage_count": 9000
+                },
+                "NLD": {
+                    "name": "Netherlands",
+                    "usage_count": 8200
+                },
+                "ISR": {
+                    "name": "Israel",
+                    "usage_count": 7900
+                },
+                "CHE": {
+                    "name": "Switzerland",
+                    "usage_count": 5100
+                },
+                "BEL": {
+                    "name": "Belgium",
+                    "usage_count": 4400
+                },
+                "SWE": {
+                    "name": "Sweden",
+                    "usage_count": 4100
+                },
+                "PRT": {
+                    "name": "Portugal",
+                    "usage_count": 4000
+                },
+                "AUT": {
+                    "name": "Austria",
+                    "usage_count": 3000
+                },
+                "NOR": {
+                    "name": "Norway",
+                    "usage_count": 2400
+                },
+                "IRL": {
+                    "name": "Ireland",
+                    "usage_count": 2300
+                },
+                "DNK": {
+                    "name": "Denmark",
+                    "usage_count": 2200
+                },
+                "FIN": {
+                    "name": "Finland",
+                    "usage_count": 1800
+                },
+                "LTU": {
+                    "name": "Lithuania",
+                    "usage_count": 1100
+                },
+                "EST": {
+                    "name": "Estonia",
+                    "usage_count": 700
+                },
+                "LVA": {
+                    "name": "Latvia",
+                    "usage_count": 600
+                },
+                "LUX": {
+                    "name": "Luxembourg",
+                    "usage_count": 400
+                },
+                "ISL": {
+                    "name": "Iceland",
+                    "usage_count": 200
+                }
+            }
+        };
+        
+        // Map ISO3 to ISO2 codes
+        const countryCodeMap = {
+            'FRA': 'FR',
+            'GBR': 'GB', 
+            'DEU': 'DE',
+            'ESP': 'ES',
+            'ITA': 'IT',
+            'CHE': 'CH',
+            'LUX': 'LU',
+            'AUT': 'AT',
+            'FIN': 'FI',
+            'SWE': 'SE',
+            'NOR': 'NO',
+            'DNK': 'DK',
+            'ISL': 'IS',
+            'EST': 'EE',
+            'LVA': 'LV',
+            'LTU': 'LT',
+            'IRL': 'IE',
+            'PRT': 'PT',
+            'POL': 'PL',
+            'NLD': 'NL',
+            'BEL': 'BE',
+            'ISR': 'IL'
+        };
+        
+        // Simplified country shapes
+        const countryShapes = {
+            'GB': { path: 'M 150,180 L 180,180 L 180,250 L 150,250 Z', cx: 165, cy: 215 },
+            'FR': { path: 'M 200,240 L 280,240 L 280,320 L 200,320 Z', cx: 240, cy: 280 },
+            'DE': { path: 'M 320,200 L 380,200 L 380,280 L 320,280 Z', cx: 350, cy: 240 },
+            'ES': { path: 'M 140,340 L 240,340 L 240,420 L 140,420 Z', cx: 190, cy: 380 },
+            'IT': { path: 'M 340,300 L 380,300 L 380,400 L 340,400 Z', cx: 360, cy: 350 },
+            'CH': { path: 'M 300,280 L 320,280 L 320,300 L 300,300 Z', cx: 310, cy: 290 },
+            'NL': { path: 'M 290,180 L 320,180 L 320,210 L 290,210 Z', cx: 305, cy: 195 },
+            'BE': { path: 'M 280,210 L 310,210 L 310,240 L 280,240 Z', cx: 295, cy: 225 },
+            'PL': { path: 'M 400,180 L 460,180 L 460,240 L 400,240 Z', cx: 430, cy: 210 },
+            'SE': { path: 'M 380,60 L 440,60 L 440,180 L 380,180 Z', cx: 410, cy: 120 },
+            'NO': { path: 'M 320,40 L 380,40 L 380,160 L 320,160 Z', cx: 350, cy: 100 },
+            'FI': { path: 'M 450,60 L 500,60 L 500,140 L 450,140 Z', cx: 475, cy: 100 },
+            'DK': { path: 'M 340,160 L 370,160 L 370,190 L 340,190 Z', cx: 355, cy: 175 },
+            'IE': { path: 'M 120,200 L 150,200 L 150,240 L 120,240 Z', cx: 135, cy: 220 },
+            'PT': { path: 'M 100,340 L 140,340 L 140,420 L 100,420 Z', cx: 120, cy: 380 },
+            'AT': { path: 'M 360,260 L 400,260 L 400,290 L 360,290 Z', cx: 380, cy: 275 },
+            'LT': { path: 'M 460,150 L 490,150 L 490,180 L 460,180 Z', cx: 475, cy: 165 },
+            'LV': { path: 'M 470,120 L 500,120 L 500,150 L 470,150 Z', cx: 485, cy: 135 },
+            'EE': { path: 'M 480,90 L 510,90 L 510,120 L 480,120 Z', cx: 495, cy: 105 },
+            'LU': { path: 'M 295,245 L 305,245 L 305,255 L 295,255 Z', cx: 300, cy: 250 },
+            'IL': { path: 'M 580,380 L 600,380 L 600,420 L 580,420 Z', cx: 590, cy: 400 },
+            'IS': { path: 'M 80,80 L 120,80 L 120,120 L 80,120 Z', cx: 100, cy: 100 }
+        };
+        
+        let currentCountry = null;
+        
+        function init() {
+            const countries = Object.entries(allData.countries)
+                .map(([code, data]) => ({
+                    code: code,
+                    name: data.name,
+                    usageCount: data.usage_count
+                }))
+                .sort((a, b) => b.usageCount - a.usageCount);
+            
+            displayOverview(countries);
+            renderMap(countries);
+
+            // Add back button event listener
+            document.getElementById('backButton').addEventListener('click', showOverview);
+        }
+        
+        function renderMap(countries) {
+            const svg = document.getElementById('europeSvg');
+            const maxUsage = Math.max(...countries.map(c => c.usageCount));
+            
+            countries.forEach(country => {
+                const iso2Code = countryCodeMap[country.code];
+                const shape = countryShapes[iso2Code];
+                if (!shape) return;
+                
+                const intensity = country.usageCount / maxUsage;
+                const color = interpolateColor('#e8f5f1', '#bee5d8', intensity);
+                
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', shape.path);
+                path.setAttribute('fill', color);
+                path.setAttribute('stroke', '#fff');
+                path.setAttribute('stroke-width', '2');
+                path.setAttribute('data-country', country.code);
+                path.style.cursor = 'pointer';
+                path.style.transition = 'all 0.2s';
+                
+                path.addEventListener('mouseenter', (e) => {
+                    e.target.setAttribute('fill', '#9cd4c3');
+                    showTooltip(e, country);
+                });
+                
+                path.addEventListener('mouseleave', (e) => {
+                    e.target.setAttribute('fill', color);
+                    hideTooltip();
+                });
+                
+                path.addEventListener('click', () => {
+                    showCountryDetail(country.code);
+                });
+                
+                svg.appendChild(path);
+                
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', shape.cx);
+                text.setAttribute('y', shape.cy);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('font-size', '10');
+                text.setAttribute('fill', '#333');
+                text.setAttribute('pointer-events', 'none');
+                text.textContent = iso2Code;
+                svg.appendChild(text);
+            });
+        }
+        
+        function interpolateColor(color1, color2, factor) {
+            const c1 = hexToRgb(color1);
+            const c2 = hexToRgb(color2);
+            const r = Math.round(c1.r + factor * (c2.r - c1.r));
+            const g = Math.round(c1.g + factor * (c2.g - c1.g));
+            const b = Math.round(c1.b + factor * (c2.b - c1.b));
+            return `rgb(${r},${g},${b})`;
+        }
+        
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+        
+        let tooltipDiv = null;
+        
+        function showTooltip(e, country) {
+            if (!tooltipDiv) {
+                tooltipDiv = document.createElement('div');
+                tooltipDiv.style.position = 'absolute';
+                tooltipDiv.style.background = 'rgba(0,0,0,0.8)';
+                tooltipDiv.style.color = 'white';
+                tooltipDiv.style.padding = '8px 12px';
+                tooltipDiv.style.borderRadius = '6px';
+                tooltipDiv.style.fontSize = '14px';
+                tooltipDiv.style.pointerEvents = 'none';
+                tooltipDiv.style.zIndex = '1000';
+                document.body.appendChild(tooltipDiv);
+            }
+            
+            tooltipDiv.innerHTML = `
+                <strong>${country.name}</strong><br>
+                ${(country.usageCount / 1000).toFixed(1)}K conversations
+            `;
+            tooltipDiv.style.display = 'block';
+            tooltipDiv.style.left = e.pageX + 10 + 'px';
+            tooltipDiv.style.top = e.pageY + 10 + 'px';
+        }
+        
+        function hideTooltip() {
+            if (tooltipDiv) {
+                tooltipDiv.style.display = 'none';
+            }
+        }
+        
+        function displayOverview(countries) {
+            const grid = document.getElementById('countryGrid');
+            grid.innerHTML = '';
+            
+            countries.forEach((country, index) => {
+                const card = document.createElement('div');
+                card.className = 'country-card';
+                card.onclick = () => showCountryDetail(country.code);
+                
+                card.innerHTML = `
+                    <div class="country-name">${country.name}</div>
+                    <div class="country-rank">Rank #${index + 1}</div>
+                    <div class="country-usage">${(country.usageCount / 1000).toFixed(1)}K conversations</div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+        
+        function showCountryDetail(countryCode) {
+            currentCountry = countryCode;
+            const country = allData.countries[countryCode];
+            
+            if (!country.soc_categories || country.soc_categories.length === 0) {
+                alert('Detailed data only available for France, UK, and Germany');
+                return;
+            }
+            
+            document.getElementById('countryTitle').textContent = country.name;
+            document.getElementById('overview').style.display = 'none';
+            document.getElementById('countryDetail').style.display = 'block';
+            
+            displayCountryStats(country);
+            displayCategoryChart(country);
+            displayTasksChart(country);
+            displayCollaborationChart(country);
+        }
+        
+        function displayCountryStats(country) {
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-label">Total Conversations</div>
+                    <div class="stat-value" style="color: #c15f3c !important;">${(country.usage_count / 1000).toFixed(1)}K</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Usage Rank</div>
+                    <div class="stat-value" style="color: #c15f3c !important;">#${getRank(currentCountry)}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Last Updated</div>
+                    <div class="stat-value" style="font-size: 1.2rem; color: #c15f3c !important;">${allData.last_updated}</div>
+                </div>
+            `;
+        }
+        
+        function getRank(countryCode) {
+            const sorted = Object.entries(allData.countries)
+                .sort((a, b) => b[1].usage_count - a[1].usage_count);
+            return sorted.findIndex(([code]) => code === countryCode) + 1;
+        }
+        
+        function displayCategoryChart(country) {
+            const ctx = document.getElementById('categoryChart');
+            
+            if (window.categoryChartInstance) {
+                window.categoryChartInstance.destroy();
+            }
+            
+            if (!country.soc_categories || country.soc_categories.length === 0) {
+                ctx.parentElement.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 2rem;">No category data available</p>';
+                return;
+            }
+            
+            window.categoryChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: country.soc_categories.map(c => c.name),
+                    datasets: [{
+                        label: 'Usage %',
+                        data: country.soc_categories.map(c => c.percentage),
+                        backgroundColor: '#b8c5ff'
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+        
+        function displayTasksChart(country) {
+            const ctx = document.getElementById('tasksChart');
+            if (window.tasksChartInstance) {
+                window.tasksChartInstance.destroy();
+            }
+            
+            if (!country.top_tasks || country.top_tasks.length === 0) {
+                ctx.parentElement.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 2rem;">No task data available</p>';
+                return;
+            }
+            
+            window.tasksChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: country.top_tasks.map(t => truncate(t.name, 60)),
+                    datasets: [{
+                        label: 'Conversations',
+                        data: country.top_tasks.map(t => t.count),
+                        backgroundColor: '#bee5d8'
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+        
+        function displayCollaborationChart(country) {
+            const ctx = document.getElementById('collabChart');
+            if (window.collabChartInstance) {
+                window.collabChartInstance.destroy();
+            }
+            
+            if (!country.collaboration || country.collaboration.length === 0) {
+                ctx.parentElement.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 2rem;">No collaboration data available</p>';
+                return;
+            }
+            
+            window.collabChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: country.collaboration.map(c => c.type),
+                    datasets: [{
+                        data: country.collaboration.map(c => c.percentage),
+                        backgroundColor: ['#b8c5ff', '#bee5d8']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+        
+        function truncate(str, len) {
+            return str.length > len ? str.substring(0, len) + '...' : str;
+        }
+        
+        function showOverview() {
+            document.getElementById('overview').style.display = 'block';
+            document.getElementById('countryDetail').style.display = 'none';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // Initialize immediately
+        init();
+    </script>
+</body>
+</html>
